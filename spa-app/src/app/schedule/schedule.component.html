@@ -1,1 +1,11 @@
-<p>schedule works!</p>
+<div>
+  <h2>Расписание доступа</h2>
+  <div *ngFor="let day of days; let i = index">
+    <div>
+      {{ day.name }}: 
+      <input type="time" [(ngModel)]="day.startTime">
+      <input type="time" [(ngModel)]="day.endTime">
+      <button (click)="saveSchedule()">Сохранить</button>
+    </div>
+  </div>
+</div>
