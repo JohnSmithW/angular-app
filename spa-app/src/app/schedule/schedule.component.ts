@@ -4,7 +4,7 @@ import { ScheduleService } from '../schedule.service';
 @Component({
   selector: 'app-schedule',
   templateUrl: './schedule.component.html',
-  styleUrls: ['./schedule.component.css'],
+  styleUrls: ['./schedule.component.scss'],
   standalone: false
 })
 export class ScheduleComponent implements OnInit {
@@ -29,6 +29,11 @@ export class ScheduleComponent implements OnInit {
   saveSchedule() {
     this.scheduleService.saveSchedule(this.days).subscribe(() => {
       alert('Расписание сохранено');
+    });
+  }
+
+  checkSchedule() {
+    this.scheduleService.checkSchedule().subscribe(() => {
     });
   }
 }

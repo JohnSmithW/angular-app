@@ -4,64 +4,93 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 
 const app = express();
-app.use(cors());
+const port = 3000;
+
+app.use(cors({
+  origin: 'http://localhost:4200',
+  credentials: true
+}));
 app.use(bodyParser.json());
 
-const JWT_SECRET = 'your_jwt_secret';
+// Секретный ключ для JWT
+const secretKey = 'your_secret_key';
 
-let schedule = {
-  monday: { start: '00:00', end: '24:00' },
-  tuesday: { start: '00:00', end: '24:00' },
-  wednesday: { start: '00:00', end: '24:00' },
-  thursday: { start: '00:00', end: '24:00' },
-  friday: { start: '00:00', end: '24:00' },
-  saturday: { start: '00:00', end: '24:00' },
-  sunday: { start: '00:00', end: '24:00' },
-};
+// Пользователи
+const users = [
+  { email: 'user1@some.com', password: 'user1@some.com' },
+  { email: 'user2@some.com', password: 'user2@some.com' }
+];
 
-const authenticateJWT = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader) {
-    const token = authHeader.split(' ')[1];
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-      if (err) return res.sendStatus(403);
-      req.user = user;
-      next();
-    });
-  } else {
-    res.sendStatus(401);
+// Расписание доступа
+let schedule = [
+  { name: 'Понедельник', startTime: '00:00', endTime: '24:00' },
+  { name: 'Вторник', startTime: '00:00', endTime: '24:00' },
+  { name: 'Среда', startTime: '00:00', endTime: '24:00' },
+  { name: 'Четверг', startTime: '00:00', endTime: '24:00' },
+  { name: 'Пятница', startTime: '00:00', endTime: '24:00' },
+  { name: 'Суббота', startTime: '00:00', endTime: '24:00' },
+  { name: 'Воскресенье', startTime: '00:00', endTime: '24:00' }
+];
+
+// Мидлвар для проверки JWT
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) {
+    console.error('No token provided'); 
+    return res.sendStatus(401);
   }
-};
 
-app.post('/api/login', (req, res) => {
+  jwt.verify(token, secretKey, (err, user) => {
+    if (err) {
+      console.error('JWT verification error:', err);  ошибки
+      return res.sendStatus(403);
+    }
+    req.user = user;
+    next();
+  });
+}
+
+// Маршрут для авторизации
+app.post('/login', (req, res) => {
   const { email, password } = req.body;
-  if ((email === 'user1@some.com' || email === 'user2@some.com') && email === password) {
-    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
-  } else {
-    res.status(401).json({ error: 'Invalid credentials' });
+  const user = users.find(u => u.email === email && u.password === password);
+  if (user == null) {
+    console.error('User not found or incorrect password'); 
+    return res.sendStatus(401);
   }
+
+  const accessToken = jwt.sign({ email: user.email }, secretKey, { expiresIn: '1h' });
+  res.json({ accessToken });
 });
 
-app.get('/api/schedule', authenticateJWT, (req, res) => {
+// Маршрут для получения расписания
+app.get('/schedule', authenticateToken, (req, res) => {
+  console.log('GET /schedule request received'); 
   res.json(schedule);
 });
 
-app.put('/api/schedule', authenticateJWT, (req, res) => {
+// Маршрут для сохранения расписания
+app.post('/schedule', authenticateToken, (req, res) => {
+  console.log('POST /schedule request received', req.body); 
   schedule = req.body;
-  res.json({ message: 'Schedule updated' });
+  res.status(201).send();
 });
 
-app.get('/api/check', (req, res) => {
-  const getCurrentDay = () => ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][new Date().getDay()];
-  const timeToMinutes = (time) => time.split(':').reduce((h, m) => h * 60 + +m, 0);
-  
-  const day = schedule[getCurrentDay()];
-  const current = new Date().getHours() * 60 + new Date().getMinutes();
-  const allowed = current >= timeToMinutes(day.start) && current <= timeToMinutes(day.end);
-  
-  res.json({ allowed });
+// Маршрут для проверки доступа без авторизации
+app.get('/check-time', (req, res) => {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const currentTime = now.toTimeString().split(' ')[0];
+  const daySchedule = schedule[dayOfWeek === 0 ? 6 : dayOfWeek - 1];
+
+  if (currentTime >= daySchedule.startTime && currentTime <= daySchedule.endTime) {
+    res.status(200).send('Доступ разрешен');
+  } else {
+    res.status(403).send('Доступ запрещен');
+  }
 });
 
-const PORT = 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});

@@ -1,11 +1,12 @@
-<div>
+<div class="container schedule-container">
   <h2>Расписание доступа</h2>
-  <div *ngFor="let day of days; let i = index">
-    <div>
-      {{ day.name }}: 
-      <input type="time" [(ngModel)]="day.startTime">
-      <input type="time" [(ngModel)]="day.endTime">
-      <button (click)="saveSchedule()">Сохранить</button>
+  <div *ngFor="let day of days; let i = index" class="day-row">
+    <div class="day-name">{{ day.name }}</div>
+    <div class="time-inputs">
+      <input type="time" [(ngModel)]="day.startTime" placeholder="Начало">
+      <input type="time" [(ngModel)]="day.endTime" placeholder="Конец">
     </div>
+    <button (click)="saveSchedule()">Сохранить</button>
   </div>
+  <button (click)="checkSchedule()">Тест запрос</button>
 </div>

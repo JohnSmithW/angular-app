@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-auth',
   templateUrl: './auth.component.html',
-  styleUrls: ['./auth.component.css'],
+  styleUrls: ['./auth.component.scss'],
   standalone: false
 })
 export class AuthComponent {
@@ -15,10 +15,15 @@ export class AuthComponent {
   constructor(private authService: AuthService, private router: Router) {}
 
   onSubmit() {
-    if (this.authService.login(this.email, this.password)) {
-      this.router.navigate(['/schedule']);
-    } else {
-      alert('Неверные учетные данные');
-    }
+    console.log('Submitting login form with email:', this.email, 'and password:', this.password);
+    this.authService.login(this.email, this.password).subscribe(
+      () => {
+        this.router.navigate(['/schedule']);
+      },
+      error => {
+        console.error('Login failed:', error);
+        alert('Неверные учетные данные');
+      }
+    );
   }
 }

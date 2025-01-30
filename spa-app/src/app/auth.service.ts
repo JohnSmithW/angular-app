@@ -1,30 +1,37 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private validUsers = [
-    { email: 'user1@some.com', password: 'user1@some.com' },
-    { email: 'user2@some.com', password: 'user2@some.com' }
-  ];
+  private apiUrl = 'http://localhost:3000/login';
 
-  private isAuthenticated = false;
+  constructor(private http: HttpClient) {}
 
-  login(email: string, password: string): boolean {
-    const user = this.validUsers.find(u => u.email === email && u.password === password);
-    if (user) {
-      this.isAuthenticated = true;
-      return true;
-    }
-    return false;
-  }
-
-  isLoggedIn(): boolean {
-    return this.isAuthenticated;
+  login(email: string, password: string): Observable<{ accessToken: string }> {
+    return this.http.post<{ accessToken: string }>(this.apiUrl, { email, password }).pipe(
+      tap(response => {
+        const token = response.accessToken;
+        if (token) {
+          localStorage.setItem('accessToken', token);
+        } else {
+          throw new Error('No token received from server');
+        }
+      }),
+      tap(null, error => {
+        console.error('Login failed:', error); 
+      })
+    );
   }
 
   logout() {
-    this.isAuthenticated = false;
+    localStorage.removeItem('accessToken');
+  }
+
+  isLoggedIn(): boolean {
+    return !!localStorage.getItem('accessToken');
   }
 }
